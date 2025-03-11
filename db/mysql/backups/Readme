@@ -1,1 +1,3 @@
 
+## backups-ship2s3.sh
+- script assums aws cli installed and configured via env and with aws cli key
