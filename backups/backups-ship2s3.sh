@@ -42,8 +42,8 @@ fi
 
 #Clean Daily backups
 echo "Cleaning daily backups older than $daily_keep_last num of files"
-for key in $(aws s3api list-objects-v2 --bucket $bucket --query "reverse(sort_by(Contents[?contains(Key, '${archive_name}') && contains(Key, 'sql.gz.enc') && starts_with(Key, 'name') == \`false\`], &LastModified))[${daily_keep_last}:].Key" --prefix "daily" --output text); do
-	aws s3 rm s3://${bucket}/${key}
+for key in $(aws s3api list-objects-v2 --bucket $bucket --query "reverse(sort_by(Contents[?contains(Key, '${archive_name}') && contains(Key, '${host}') && contains(Key, 'sql.gz.enc') && starts_with(Key, 'name') == \`false\`], &LastModified))[${daily_keep_last}:].Key" --prefix "daily" --output text); do
+	echo aws s3 rm s3://${bucket}/${key}
 done
 
 #Clean Weekly backups
@@ -65,5 +65,15 @@ echo "Cleaning local backups dirs, keeping last 15"
 find $BACKUP_DIRECTORY_FULL_PATH -type d -printf "%T@ %p\n"|sort -n|head -n -16|awk '{print $2}'|while read -r dir; do rm -rf "$dir";done
 echo "Cleaning Finished..."
 
-echo Storage Info:
-for a in daily weekly monthly; do echo RAW Usage for $a PREFIX: $(aws s3 ls $BUCKET_NAME/$a/  --recursive --summarize --human-readable |tail -2|tr -d '\n') ;done
+echo S3 Bucket: $bucket usage Info:
+
+for a in daily weekly monthly;
+ do
+	echo RAW TOTAL Usage for $a PREFIX: $(aws s3 ls $bucket/$a/  --recursive --summarize --human-readable |tail -2|tr -d '\n')
+ done
+	echo --------------------
+for a in daily weekly monthly;
+ do
+	let size=$(aws s3api list-objects --bucket $bucket --query "Contents[?contains(Key, '${host}')].[Size]" --output text |  awk '{sum+=$1} END {print sum}')/1024/1024
+        echo RAW host: $host Usage for $a PREFIX: $size Mbytes
+ done
